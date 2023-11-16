@@ -2,119 +2,87 @@ library(tidyverse)
 library(reshape2)
 library(lme4)
 library(SummarizedExperiment)
-
-aggseq <- function(se){
+miRglmm <- function(se,  col_group = c(rep("A", 18), rep("B",19)), 
+                    min_med_lcpm = -1){
+  
+  ## for each miRNA (this could be parallelized)
   uniq_miRNA = unique(rowData(se)$miRNA)
-  for (ind3 in seq(1, length(uniq_miRNA))){
-  uniq_miRNA_in=uniq_miRNA[ind3]
-  idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
-  Y_all_sub = t(assay(se)[idx, ])
-  Y_seq_labels_sub = rowData(se)$uniqueSequence[idx]
-  
-  
-  data_wide=as.data.frame(as.matrix(Y_all_sub))
-  data_wide=as.data.frame(rowSums(data_wide))
-  colnames(data_wide)=uniq_miRNA_in
-  if (ind3==1){
-    data_miRNA=data_wide
-  } else {
-    data_miRNA=cbind(data_miRNA, data_wide)
-  }
-  }
-  return(data_miRNA)
-}
-
-miRDESeq2 <- function(agg_data, col_group = c(rep("A", 18), rep("B",19))){
-  library(DESeq2)
-  panelB_raw=SummarizedExperiment(assays=list(counts=t(agg_data)), rowData=colnames(agg_data), colData=col_group)
-  names(colData(panelB_raw))=c("Pool")
-  ddsSE=DESeqDataSet(panelB_raw, design=~Pool)
-  dds=DESeq(ddsSE)
-  res=results(dds)
-  
-  deseq2_results=as.data.frame(cbind(res$log2FoldChange, res$lfcSE)) ###note this SE is on log2 scale
-  rownames(deseq2_results)=rownames(res)
-  colnames(deseq2_results)=c("est_log2FC", "PoolB SE")
-  deseq2_results$col_groupB=log(2^deseq2_results$est_log2FC)
-  return(deseq2_results)
-}
-
-miRedgeR <- function(agg_data, col_group = c(rep("A", 18), rep("B",19))){
-  
-  library(edgeR)
-  edgeR_set=DGEList(counts=t(agg_data), group=col_group)
-  design=model.matrix(~col_group)
-  edgeR_set=estimateDisp(edgeR_set, design)
-  et=glmQLFit(edgeR_set, design)
-  et_test=glmQLFTest(et)
-  edgeR_results=as.data.frame(cbind(log(2^et_test$table$logFC), et_test$table$PValue))
-  rownames(edgeR_results)=rownames(et_test$table)
-  colnames(edgeR_results)=c("col_groupB", "Pval")
-  
-  return(edgeR_results)
-}
-
-miRlimvoom <- function(agg_data, col_group = c(rep("A", 18), rep("B",19))){
-  library(edgeR)
-  col_data=as.data.frame(col_group)
-  limvoom_set=DGEList(counts=t(agg_data))
-  design=model.matrix(~col_group)
-  y=voom(limvoom_set, design)
-  fit=lmFit(y, design)
-  eb_fit=eBayes(fit, trend=TRUE)
-  coeff_out=log(2^coef(eb_fit)[,colnames(coef(eb_fit))=="col_groupB"])
-  coeff_out_log2FC=coef(eb_fit)[,colnames(coef(eb_fit))=="col_groupB"]
-  SE_out=sqrt(eb_fit$s2.post)*eb_fit$stdev.unscaled[,colnames(coef(eb_fit))=="col_groupB"]
-  p_out=eb_fit$p.value[,colnames(eb_fit$p.value)=="col_groupB"]
-  limmavoom_results=as.data.frame(cbind(coeff_out, coeff_out_log2FC, SE_out, p_out))
-  rownames(limmavoom_results)=rownames(coef(eb_fit))
-  colnames(limmavoom_results)=c("col_groupB", "est_log2FC", "SE", "Pval")
-  
-  return(limmavoom_results)
-}
-
-miRNBglm <- function(agg_data, col_group = c(rep("A", 18), rep("B",19))){
-  library(MASS)
-  uniq_miRNA=unique(colnames(agg_data))
-  total_counts=rowSums(agg_data)
-  for (ind3 in seq(1, length(uniq_miRNA))){
-    uniq_miRNA_in=uniq_miRNA[ind3]
-    idx = which(colnames(agg_data) == uniq_miRNA[ind3])
-    Y_all_sub = data_miRNA[, idx]
+  total_counts=colSums(assay(se))
+  for(ind3 in seq(1, length(uniq_miRNA))){
+    cat(uniq_miRNA[ind3], "\n")
     
+    ## subset sequences that map to the miRNA
+    idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
+    Y_all_sub = t(assay(se)[idx, ])
+    Y_seq_labels_sub = rowData(se)$uniqueSequence[idx]
     
-    data_wide=as.data.frame(as.matrix(Y_all_sub))
-    colnames(data_wide)="count"
-    data_wide=cbind(col_group,total_counts, data_wide)
+    ## compute median CPM for each sequence
+    cpm_sub = Y_all_sub / (total_counts/1e6)
+    median_cpm_sub = apply(cpm_sub, 2, median)
+
+    ## filter sequences with median CPM less than the min_med_lcpm threshold
+    if(!is.null(min_med_lcpm)){
+      idx2 = which(log(median_cpm_sub) > min_med_lcpm)
+      Y_all_sub = Y_all_sub[ ,idx2]
+      Y_seq_labels_sub = Y_seq_labels_sub[idx2]
+    }
     
-    
+    ## format data to fit glmer.nb models
+    data_wide = as.data.frame(as.matrix(Y_all_sub))
+    colnames(data_wide) = Y_seq_labels_sub
+    sample_labels = rownames(Y_all_sub)
+    data_wide = cbind(col_group, total_counts, sample_labels, data_wide)
+    data_long = melt(data_wide, 
+                     id.vars = c("col_group", "total_counts", "sample_labels"),
+                     variable.name = "sequence", 
+                     value.name = "count")
     tryCatch({
-      f1=glm.nb(count~col_group+offset(log(total_counts)), data=data_wide, control=glm.control(maxit=1000))
-      out_f1_coef=as.data.frame(t(coef(f1)))
-      out_f1_SE=as.data.frame(t(summary(f1)$coefficients[,2]))
-      out_f1_SE=cbind(out_f1_SE, as.data.frame(t(suppressMessages(confint(f1)[2,]))))
-      colnames(out_f1_SE)=c("Int SE", "PoolB SE", "PoolB LL", "PoolB UL")
-      out_f1_coef=cbind(out_f1_coef, out_f1_SE)
-      out_f1_coef$miRNA=uniq_miRNA_in
-      out_f1_coef$theta=summary(f1)$theta
-      out_f1_coef$medianCPM=median(data_wide$cpm)
-      if (ind3==1){
-        miRNA_results=out_f1_coef
-      } else {
-        miRNA_results=rbind(miRNA_results, out_f1_coef)
+      f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+                    (1+col_group|sequence) + (1|sample_labels), 
+                  data=data_long, 
+                  control=(glmerControl(optimizer="bobyqa", 
+                                        tolPwrss = 1e-3, 
+                                        optCtrl=list(maxfun=2e5))))
+      ## a bunch of these produce the message:
+      ## boundary (singular) fit: see help('isSingular')
+      ## could we substitute f1 with f1_sub if we get this message?
+      f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+                          (1|sequence) + (1|sample_labels), 
+                        data=data_long, 
+                        control=(glmerControl(optimizer="bobyqa", 
+                                              tolPwrss = 1e-3, 
+                                              optCtrl=list(maxfun=2e5))))
+      out_anova = anova(f1, f1_sub)
+      out_CI = confint(f1, method="Wald")
+      out_f1_coef = as.data.frame(t(fixef(f1)))
+      out_f1_SE = cbind(sqrt(vcov(f1)[1,1]), sqrt(vcov(f1)[2,2]))
+      out_f1_SE = cbind(out_f1_SE, t(out_CI[which(rownames(out_CI)=="col_groupB"), ]))
+      colnames(out_f1_SE) = c("Int SE", "PoolB SE", "PoolB LL", "PoolB UL")
+      out = VarCorr(f1)
+      out_f1_varcomp = as.data.frame(cbind(out$sample_labels[1,1], 
+                                           out$sequence[1,1], 
+                                           out$sequence[2,2]))
+      colnames(out_f1_varcomp) = c("random intercept var sample",
+                                   "random intercept var sequence", 
+                                   "random slope var sequence")
+      out_f1_coef = cbind(out_f1_coef, out_f1_SE, out_f1_varcomp)
+      out_f1_coef$miRNA = uniq_miRNA[ind3]
+      #out_f1_coef$true_logFC=true_logFC_BvsA[ind3]
+      #out_f1_coef$theta=f1$phis[1]
+      out_f1_coef$n_seq = dim(Y_all_sub)[2]
+      out_f1_coef$rand_slope_LRTp = out_anova$`Pr(>Chisq)`[2]
+      if(ind3 == 1){
+        f1_results = out_f1_coef
+      } else{
+        f1_results = rbind(f1_results, out_f1_coef)
       }
-    }, error=function(e){cat("ERROR :", uniq_miRNA_in)})
-    
+    }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
   }
-  
-  return(miRNA_results)
+  return(f1_results)
 }
 
-data_miRNA=aggseq(sims[[1]]$sim_se)
-tst = miRDESeq2(data_miRNA)
-tst2 = miRedgeR(data_miRNA)
-tst3 = miRlimvoom(data_miRNA)
-tst4 = miRNBglm(data_miRNA)
+
+tst = miRglmm(sims[[1]]$sim_se)
 
 uniq_miRNA = unique(rowData(sims[[1]]$sim_se)$miRNA)
 true_logFC = rep(log(1), length(uniq_miRNA))
