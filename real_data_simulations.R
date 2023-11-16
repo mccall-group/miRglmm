@@ -13,17 +13,17 @@ sim_random_signal <- function(se_orig, bins, mean_effect=2, sd_effect=1){
     filter(!miRNA %in% change_miRNA_up$miRNA)
 
   ## add signal to chosen miRNA
-  ## up is increased in samples 1:18
+  ## up is increased in samples 1:19
   iup = which(rowData(se)$miRNA %in% change_miRNA_up$miRNA)
   effect_up = rnorm(length(iup), mean_effect, sd_effect)
   effect_up[which(effect_up < 0)] = 0 # truncate effect at zero below
-  assay(se)[iup, 1:18] = round(assay(se)[iup, 1:18] * effect_up)
+  assay(se)[iup, 1:19] = round(assay(se)[iup, 1:19] * effect_up)
   
-  ## down is increased in samples 19:37
+  ## down is increased in samples 20:39
   idown = which(rowData(se)$miRNA %in% change_miRNA_down$miRNA)
   effect_down = rnorm(length(idown), mean_effect, sd_effect)
   effect_down[which(effect_down < 0)] = 0 # truncate effect at zero below
-  assay(se)[idown, 19:37] = round(assay(se)[idown, 19:37] * effect_down)
+  assay(se)[idown, 20:39] = round(assay(se)[idown, 20:39] * effect_down)
   
   return(list(sim_se=se, 
               change_miRNA_up=change_miRNA_up, 

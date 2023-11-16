@@ -2,13 +2,13 @@ library(tidyverse)
 library(reshape2)
 library(lme4)
 library(SummarizedExperiment)
-miRglmm <- function(se,  col_group = c(rep("A", 18), rep("B",19)), 
+miRglmm <- function(se,  col_group = c(rep("A", 19), rep("B",20)), 
                     min_med_lcpm = -1){
   
   ## for each miRNA (this could be parallelized)
   uniq_miRNA = unique(rowData(se)$miRNA)
   total_counts=colSums(assay(se))
-  for(ind3 in seq(1, length(uniq_miRNA))){
+  for(ind3 in seq(1, 10)){#} length(uniq_miRNA))){
     cat(uniq_miRNA[ind3], "\n")
     
     ## subset sequences that map to the miRNA
@@ -81,8 +81,11 @@ miRglmm <- function(se,  col_group = c(rep("A", 18), rep("B",19)),
   return(f1_results)
 }
 
-
+startTime=Sys.time()
 tst = miRglmm(sims[[1]]$sim_se)
+endTime=Sys.time()
+endTime-startTime
+
 
 uniq_miRNA = unique(rowData(sims[[1]]$sim_se)$miRNA)
 true_logFC = rep(log(1), length(uniq_miRNA))
