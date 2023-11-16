@@ -2,7 +2,7 @@
 
 ## read in sequence level data
 ## this file is 9.8GB; be patient
-load(file="seqlevel_microRNAome.rda")
+load(file="/scratch/mmccall2_lab/microRNAome/seqlevel_microRNAome.rda")
 
 ## identify the monocyte samples from study 89 that were not flagged as poor quality
 ind_col = which(seqlevel_microRNAome$cell_tissue=="Monocyte" & 

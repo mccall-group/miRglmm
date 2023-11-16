@@ -19,9 +19,9 @@ exact_subset = monocyte_data_subset[iexact, ]
 ## they have less than 1e6 total count but so do 4 other samples
 ## also this should probably be in extract_monocyte_data_subset.R
 ## where the other selection of samples is done
-irm = which(exact_subset$sample_id %in% c("SRR5755891", "SRR5755870"))
-exact_subset = exact_subset[ ,-irm]
-total_counts = total_counts[-irm]
+#irm = which(exact_subset$sample_id %in% c("SRR5755891", "SRR5755870"))
+#exact_subset = exact_subset[ ,-irm]
+#total_counts = total_counts[-irm]
 save(total_counts, file = "monocyte_subset_total_counts.rda")
 
 ## only keep sequences with counts than zero in some sample

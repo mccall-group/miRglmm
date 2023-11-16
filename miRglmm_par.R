@@ -80,9 +80,11 @@ miRglmm_par <- function(se,  col_group = c(rep("A", 18), rep("B",19)),
 }
 
 cores=detectCores(logical=TRUE)
-registerDoParallel(cores-5)
+cl=makeCluster(cores-5)
+registerDoParallel(cl)
 startTime=Sys.time()
 tst_par = miRglmm_par(sims[[1]]$sim_se)
+stopCluster(cl)
 endTime=Sys.time()
 endTime-startTime
 
