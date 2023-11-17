@@ -4,13 +4,14 @@ library(lme4)
 library(SummarizedExperiment)
 library(foreach)
 library(doParallel)
-miRglmm <- function(se,  col_group = c(rep("A", 19), rep("B",20)), ncores=1,
+miRglmm <- function(se, ncores = 1, col_group = c(rep("A", 19), rep("B",20)),
                     min_med_lcpm = -1){
   
   ## for each miRNA (this could be parallelized)
   uniq_miRNA = unique(rowData(se)$miRNA)
   total_counts=colSums(assay(se))
   if (ncores==1){
+    print('running non-parallel')
     f1_list=list()
     f1_sub_list=list()
   for(ind3 in seq(1, length(uniq_miRNA))){
@@ -65,7 +66,7 @@ miRglmm <- function(se,  col_group = c(rep("A", 19), rep("B",20)), ncores=1,
     fits[["miRglmm"]]=f1_list
     fits[["miRglmm_reduced"]]=f1_sub_list
   } else {
- 
+    print('running parallel')
     fits_full=foreach(ind3=1:length(uniq_miRNA), .packages=c("tidyverse", "reshape2", "lme4", "SummarizedExperiment")) %dopar% {
       #cat(uniq_miRNA[ind3], "\n")
       ## subset sequences that map to the miRNA
@@ -161,13 +162,13 @@ if (ncores>1){
 cl=makeCluster(ncores)
 registerDoParallel(cl)
 }
-#startTime=Sys.time()
+startTime=Sys.time()
 tst_par = miRglmm(sims[[1]]$sim_se, ncores)
 if (ncores>1){
 stopCluster(cl)
 }
-#endTime=Sys.time()
-#endTime-startTime
+endTime=Sys.time()
+endTime-startTime
 
 uniq_miRNA = unique(rowData(sims[[1]]$sim_se)$miRNA)
 true_logFC = rep(log(1), length(uniq_miRNA))
