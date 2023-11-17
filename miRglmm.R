@@ -2,6 +2,8 @@ library(tidyverse)
 library(reshape2)
 library(lme4)
 library(SummarizedExperiment)
+library(foreach)
+library(doParallel)
 miRglmm <- function(se,  col_group = c(rep("A", 19), rep("B",20)), ncores=1,
                     min_med_lcpm = -1){
   
