@@ -4,8 +4,8 @@ library(lme4)
 library(SummarizedExperiment)
 library(foreach)
 library(doParallel)
-miRglmm <- function(se, ncores = 1, col_group = c(rep("A", 19), rep("B",20)),
-                    min_med_lcpm = -1){
+miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
+                    min_med_lcpm = -1, ncores = 1){
   
   ## for each miRNA (this could be parallelized)
   uniq_miRNA = unique(rowData(se)$miRNA)
@@ -157,24 +157,4 @@ miRglmm <- function(se, ncores = 1, col_group = c(rep("A", 19), rep("B",20)),
   return(fits)
 }
 
-ncores=8 #match to what was requested on BH
-if (ncores>1){
-cl=makeCluster(ncores)
-registerDoParallel(cl)
-}
-startTime=Sys.time()
-tst_par = miRglmm(sims[[1]]$sim_se, ncores)
-if (ncores>1){
-stopCluster(cl)
-}
-endTime=Sys.time()
-endTime-startTime
 
-uniq_miRNA = unique(rowData(sims[[1]]$sim_se)$miRNA)
-true_logFC = rep(log(1), length(uniq_miRNA))
-true_logFC[which(uniq_miRNA %in% as.character(sims[[1]]$change_miRNA_up$miRNA))] = log(2)
-true_logFC[which(uniq_miRNA %in% as.character(sims[[1]]$change_miRNA_down$miRNA))] = log(0.5)
-true_logFC_BvsA = true_logFC*-1
-tst$true_logFC=true_logFC_BvsA
-
-plot(x=true_logFC_BvsA, y=tst$col_groupB)
