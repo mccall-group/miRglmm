@@ -118,3 +118,81 @@ rownames(out)=uniq_miRNA
   return(out)
   
 }
+
+get_varcomp <- function(full, reduced){
+  
+  singular_warn=data.frame("singular"=sapply(full, 'isSingular'))
+  #find full model varcomp
+  uniq_miRNA=names(full)
+  var_comp=data.frame('random_int_sample_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sample_labels[1,1]))
+  var_comp2=data.frame('random_int_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sequence[1,1]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp2=data.frame('random_slope_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sequence[2,2]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  
+  #find reduced model varcomp
+  var_comp2=data.frame('random_int_sample_var_red'=sapply(uniq_miRNA, function(row) VarCorr(reduced[[row]])$sample_labels[1]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp2=data.frame('random_int_seq_var_red'=sapply(uniq_miRNA, function(row) VarCorr(reduced[[row]])$sequence[1]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp$`random_slope_seq_var_red`=NA
+  var_comp=transform(merge(var_comp, singular_warn, by='row.names'), row.names=Row.names, Row.names=NULL)
+
+  
+  return(var_comp)
+
+}
+
+
+getCoverageInd <- function(betas, SEs, nominal_level = 0.95){
+  z_alpha=qnorm(1-(1-nominal_level)/2)
+  LL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]-z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  UL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]+z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  coverage_indicator=data.frame(1*((LL_mat<=betas$true_beta) & (UL_mat >= betas$true_beta)))
+  return(coverage_indicator)
+}
+
+getCI_widths <- function(betas, SEs, nominal_level = 0.95){
+  z_alpha=qnorm(1-(1-nominal_level)/2)
+  LL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]-z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  UL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]+z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  CI_widths=UL_mat-LL_mat
+  return(CI_widths)
+}
+
+# #miRglmm coverage based on 95% Wald CI
+# singular_warn=data.frame("singular"=sapply(model_fits[["miRglmm"]], 'isSingular'))
+# #find full model CI limits
+# uniq_miRNA=names(model_fits[["miRglmm"]])
+# CI_lim=data.frame(t(data.frame(sapply(uniq_miRNA, function(row) confint(model_fits[["miRglmm"]][[row]], method="profile")[which(str_detect(rownames(confint(model_fits[["miRglmm"]][[row]], method="Wald")),var)==TRUE), ]))))
+# rownames(CI_lim)=uniq_miRNA
+# colnames(CI_lim)=c("LL", "UL")
+# CI_lim=transform(merge(CI_lim, true_logFC_BvsA, by='row.names'), row.names=Row.names, Row.names=NULL)
+# coverage=data.frame("miRglmm_full"=as.numeric(CI_lim$true_beta>=CI_lim$LL &  CI_lim$true_beta<=CI_lim$UL))
+# rownames(coverage)=rownames(CI_lim)
+# coverage=transform(merge(coverage, singular_warn, by='row.names'), row.names=Row.names, Row.names=NULL)
+# 
+# 
+# #find reduced model betas
+# uniq_miRNA=names(model_fits[["miRglmm_reduced"]])
+# CI_lim=data.frame(t(data.frame(sapply(uniq_miRNA, function(row) confint(model_fits[["miRglmm_reduced"]][[row]], method="profile")[which(str_detect(rownames(confint(model_fits[["miRglmm_reduced"]][[row]], method="Wald")),var)==TRUE), ]))))
+# rownames(CI_lim)=uniq_miRNA
+# colnames(CI_lim)=c("LL", "UL")
+# CI_lim=transform(merge(CI_lim, true_logFC_BvsA, by='row.names'), row.names=Row.names, Row.names=NULL)
+# coverage_red=data.frame("miRglmm_reduced"=as.numeric(CI_lim$true_beta>=CI_lim$LL &  CI_lim$true_beta<=CI_lim$UL))
+# rownames(coverage_red)=rownames(CI_lim)
+# coverage=transform(merge(coverage, coverage_red, by='row.names'), row.names=Row.names, Row.names=NULL)
+# 
+# #if singularity warning choose reduced model betas
+# coverage_out=data.frame('miRglmm'=coverage$miRglmm_full)
+# rownames(coverage_out)=rownames(coverage)
+# coverage_out$miRglmm[which(coverage$singular==TRUE)]=coverage$miRglmm_reduced[which(coverage$singular==TRUE)]
+# coverage=coverage_out
+# 
+# #miRglmnb
+# uniq_miRNA=names(model_fits[["miRglmnb"]])
+# CI_lim=data.frame(t(data.frame(sapply(uniq_miRNA, function(row) suppressMessages(confint(model_fits[["miRglmnb"]][[row]])[which(str_detect(rownames(confint(model_fits[["miRglmnb"]][[row]], method="Wald")),var)==TRUE), ])))))
+# rownames(CI_lim)=uniq_miRNA
+# colnames(CI_lim)=c("LL", "UL")
+# CI_lim=transform(merge(CI_lim, true_logFC_BvsA, by='row.names'), row.names=Row.names, Row.names=NULL)
+# coverage_red=data.frame("miRglmm_reduced"=as.numeric(CI_lim$true_beta>=CI_lim$LL &  CI_lim$true_beta<=CI_lim$UL))

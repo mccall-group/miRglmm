@@ -1,4 +1,9 @@
-
+library(tidyverse)
+library(reshape2)
+library(lme4)
+library(SummarizedExperiment)
+library(foreach)
+library(doParallel)
 miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores = 1){
   library(MASS)
   uniq_miRNA=unique(colnames(agg_data))

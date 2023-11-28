@@ -4,13 +4,17 @@ library(lme4)
 library(SummarizedExperiment)
 library(DESeq2)
 library(edgeR)
+library(parallel)
+library(doParallel)
 
 load("sims_N100_m2_s1.rda")
-ind_run=1 #can be run in parallel using array on BH
-
+ind_run=as.integer(commandArgs(trailingOnly = TRUE)[1]) #can be run in parallel using array on BH
+ncores=as.integer(commandArgs(trailingOnly = TRUE)[2])
+print(ind_run)
+print(ncores)
 
 #start cluster to run miRNA in parallel
-ncores_use=8 #match to what was requested on BH
+#ncores=8 #match to what was requested on BH
 if (ncores>1){
   cl=makeCluster(ncores)
   registerDoParallel(cl)
@@ -20,12 +24,15 @@ if (ncores>1){
 #define groups to compare
 col_group_in = c(rep("A", 19), rep("B",20))
 
+source('miRglmm.R')
+source('miRglmnb.R')
+
 #fit miRglmm full and reduced models
-fits = miRglmm(sims[[ind_run]]$sim_se, col_group=col_group_in, ncores = ncores_use)
+fits = miRglmm(sims[[ind_run]]$sim_se, col_group=col_group_in, ncores = ncores)
 
 #aggregate data to miRNAs and fit miRglmnb
 miRNA_counts = t(apply(assay(sims[[ind_run]]$sim_se), 2, function(x) by(x, rowData(sims[[ind_run]]$sim_se)$miRNA, sum)))
-fits[["miRglmnb"]]= miRglmnb(miRNA_counts, col_group=col_group_in, ncores = ncores_use)
+fits[["miRglmnb"]]= miRglmnb(miRNA_counts, col_group=col_group_in, ncores = ncores)
 
 if (ncores>1){
   stopCluster(cl)
