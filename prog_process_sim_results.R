@@ -7,9 +7,12 @@ library(edgeR)
 
 #load datasets to grab truth from
 load("sims_N100_m2_s1.rda")
+source("process_results.R")
 results=list()
 #for each results file calculate beta and SE (if applicable to method)
-for (ind_run in seq(1,10)){ 
+start_time=Sys.time()
+for (ind_run in seq(1,length(sims))){ 
+
 load(file=paste0("sim results/sims_N100_m2_s1_results", ind_run, ".rda"))
 
 
@@ -42,6 +45,7 @@ var_comp=get_varcomp(fits[["miRglmm"]], fits[["miRglmm_reduced"]])
 bias=data.frame(beta_hat[, c("miRglmm","miRglmnb","DESeq2","edgeR","limmavoom")]-beta_hat$true_beta)
 squared_error=bias^2
 MSE_sim=t(data.frame(MSE=colMeans(squared_error)))
+squared_error$true_beta=beta_hat$true_beta
 MSE_sim_by_truth=squared_error %>% group_by(true_beta) %>% summarise_all(funs(mean))
 
 bias$true_beta=beta_hat$true_beta
@@ -72,8 +76,19 @@ results[["MSE_sim"]][[ind_run]]=MSE_sim
 results[["MSE_sim_by_truth"]][[ind_run]]=MSE_sim_by_truth
 results[["coverage_prob_sim"]][[ind_run]]=coverage_probability_sim
 results[["coverage_prob_sim_by_truth"]][[ind_run]]=coverage_probability_sim_by_truth
-}
 
-miRglmm_squared_error=sapply(1:length(results[["squared_error"]]), function(i) cbind(results[["squared_error"]][[i]]$miRglmm))
-rownames(miRglmm_squared_error)=rownames(results[["squared_error"]][[1]])
-MSE_miRNA=data.frame("miRglmm"=rowMeans(miRglmm_squared_error))
+}
+end_time=Sys.time()
+end_time-start_time
+
+save(results, file="sim results/sims_N100_m2_s1_combinedresults.rda")
+# MSE_mat=data.frame(matrix(unlist(results[["MSE_sim"]]), ncol=5, byrow=TRUE))
+# colnames(MSE_mat)=colnames(results[["MSE_sim"]][[1]])
+
+
+# if we want MSE by miRNA--not sure we need this since truth changes by simulation for each miRNA
+#miRglmm_squared_error=sapply(1:length(results[["squared_error"]]), function(i) cbind(results[["squared_error"]][[i]]$miRglmm))
+#rownames(miRglmm_squared_error)=rownames(results[["squared_error"]][[1]])
+#MSE_miRNA=data.frame("miRglmm"=rowMeans(miRglmm_squared_error))
+
+## could replicate code for all 6 methods and similarly code coverage probability by miRNA
