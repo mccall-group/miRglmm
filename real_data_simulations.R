@@ -36,8 +36,8 @@ sim_random_signal <- function(se_orig, bins, mean_effect=2, sd_effect=1){
 N <- 100
 
 ## load filtered monocyte data subset
-load(file = "exact_subset_filtered2.rda")
-load(file = "n_seq_out.rda")
+load(file = "monocyte_exact_subset_filtered2.rda")
+load(file = "monocyte_n_seq_out.rda")
 
 ## set up bins to add signal to miRNA
 ## do not allow highest expressing miRNA to be chosen for added effect

@@ -20,7 +20,7 @@ save(total_counts, file = "monocyte_subset_total_counts.rda")
 
 ## only keep sequences with counts than zero in some sample
 exact_subset_filtered = exact_subset[rowSums(assay(exact_subset)) > 0, ]
-save(exact_subset_filtered, file = "exact_subset_filtered.rda")
+save(exact_subset_filtered, file = "monocyte_exact_subset_filtered.rda")
 
 ## calculate miRNA-level summaries
 nseq_miRNA = table(rowData(exact_subset_filtered)$miRNA)
@@ -55,9 +55,9 @@ ggarrange(p1, p2, p3, p4, ncol=1, nrow=4)
 ## this it the min of miRNA level median CPM in ERCC data
 keep_miRNA = rownames(n_seq_out)[log(n_seq_out$median_cpm) > 5] 
 exact_subset_filtered2 <- exact_subset_filtered[rowData(exact_subset_filtered)$miRNA %in% keep_miRNA, ]
-save(exact_subset_filtered2, file = "exact_subset_filtered2.rda")
+save(exact_subset_filtered2, file = "monocyte_exact_subset_filtered2.rda")
 n_seq_out = n_seq_out[keep_miRNA, ]
-save(n_seq_out, file = "n_seq_out.rda")
+save(n_seq_out, file = "monocyte_n_seq_out.rda")
 
 ########################################################################
 ## move these plots to 
