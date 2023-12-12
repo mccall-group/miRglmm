@@ -26,7 +26,8 @@ log_med_cpm_mat=log(med_cpm_mat+1)
 scaleFUN=function(x) format(x, scientific=TRUE, digits=1)  #sprintf("%.1f", x)
 p4=ggplot(data.frame(log_med_cpm_mat), aes(x=log_med_cpm_mat))+geom_histogram(color="black", fill="gray", bins=100)+xlab('log(median CPM+1)')+ylab('number of sequences')+ggtitle("sequence expression")+theme(plot.title=element_text(hjust=0.5))+scale_y_continuous(trans='log', labels=scaleFUN)
 p3=ggplot(data.frame("n_seq"=n_seq_out$nseq_miRNA), aes(x=n_seq))+geom_histogram(color="black", fill="gray", bins=100)+xlab('number of sequences')+ylab('number of miRNA')+ggtitle("number of sequences per miRNA")+theme(plot.title=element_text(hjust=0.5))+scale_x_continuous(trans='log')
-#ggarrange(p1, p2, p3, p4, ncol=2, nrow=4)
+ggarrange(p1, p2, p3, p4, ncol=2, nrow=4)
+ggsave("figures/figure2A.tif", plot=last_plot(), device="tiff", width=165, height=250, units="mm", dpi=320, bg="white")
 
 #############################################################
 
@@ -60,7 +61,8 @@ log_med_cpm_mat_plot=log(med_cpm_mat+1)
 p8=ggplot(data.frame(log_med_cpm_mat_plot), aes(x=log_med_cpm_mat_plot))+geom_histogram(color="black", fill="gray", bins=100)+xlab('log(median CPM+1)')+ylab('number of sequences')+ggtitle("sequence expression")+theme(plot.title=element_text(hjust=0.5))+scale_y_continuous(trans='log', labels=scaleFUN)
 
 p7=ggplot(data.frame("n_seq"=n_seq_out$nseq_miRNA), aes(x=n_seq))+geom_histogram(color="black", fill="gray", bins=100)+xlab('number of sequences')+ylab('number of miRNA')+ggtitle("number of sequences per miRNA")+theme(plot.title=element_text(hjust=0.5))+scale_x_continuous(trans='log')
-#ggarrange(p1, p5, p2, p6, p3, p7, p4, p8, ncol=2, nrow=4)
+ggarrange(p5, p6, p7, p8, ncol=2, nrow=4)
+ggsave("figures/figure2B.tif", plot=last_plot(), device="tiff", width=165, height=250, units="mm", dpi=320, bg="white")
 
 
 
@@ -80,6 +82,9 @@ p10=ggplot()+theme_void()
 p12=ggplot(data.frame(log_med_cpm_mat_plot), aes(x=log_med_cpm_mat_plot))+geom_histogram(color="black", fill="gray", bins=100)+xlab('log(median CPM+1)')+ylab('number of sequences')+ggtitle("sequence expression")+theme(plot.title=element_text(hjust=0.5))
 
 p11=ggplot(nseq_miRNA, aes(x=Freq))+geom_histogram(color="black", fill="gray", bins=100)+xlab('number of sequences')+ylab('number of miRNA')+ggtitle("number of sequences per miRNA")+theme(plot.title=element_text(hjust=0.5))+scale_x_continuous(trans='log')
+
+ggarrange(p9, p10, p11, p12, ncol=2, nrow=4)
+ggsave("figures/figure2C.tif", plot=last_plot(), device="tiff", width=165, height=250, units="mm", dpi=320, bg="white")
 
 ggarrange(p1, p5, p9, p2, p6, p10, p3, p7, p11, p4, p8, p12, ncol=3, nrow=4)
 ggsave("figures/figure2.tif", plot=last_plot(), device="tiff", width=500, height=250, units="mm", dpi=320, bg="white")
