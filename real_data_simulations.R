@@ -6,7 +6,7 @@ sim_random_signal <- function(se_orig, bins, mean_effect=2, sd_effect=1){
   sample_labels = colnames(se)
 
   ## randomly select miRNA stratified by bin to add signal
-  set.seed(NULL) # does this need to be here?
+  #set.seed(NULL) # does this need to be here?
   sample_change = bins %>% group_by(rank) %>% sample_n(size=2)
   change_miRNA_up = sample_change %>% group_by(rank) %>% sample_n(size=1)
   change_miRNA_down = sample_change %>%
@@ -46,6 +46,7 @@ bins = n_seq_out %>% filter(median_cpm < 59000) %>%
   mutate(rank = ntile(median_cpm, 20))
 bins$miRNA <- as.character(bins$miRNA)
 
+set.seed(NULL)
 ## run the function with mean 2 and sd 1
 sims <- list()
 for(k in 1:N) sims[[k]] <- sim_random_signal(exact_subset_filtered2, bins,

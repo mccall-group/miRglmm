@@ -42,8 +42,10 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                      id.vars = c("col_group", "total_counts", "sample_labels"),
                      variable.name = "sequence", 
                      value.name = "count")
+    f1=0
+    f1_sub=0
     tryCatch({
-      f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+      f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
                     (1+col_group|sequence) + (1|sample_labels), 
                   data=data_long, 
                   control=(glmerControl(optimizer="bobyqa", 
@@ -52,7 +54,7 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
       ## a bunch of these produce the message:
       ## boundary (singular) fit: see help('isSingular')
       ## could we substitute f1 with f1_sub if we get this message?
-      f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+      f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
                           (1|sequence) + (1|sample_labels), 
                         data=data_long, 
                         control=(glmerControl(optimizer="bobyqa", 
@@ -94,8 +96,9 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                        id.vars = c("col_group", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
+      f1=0
       tryCatch({
-        f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+        f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
                         (1+col_group|sequence) + (1|sample_labels), 
                       data=data_long, 
                       control=(glmerControl(optimizer="bobyqa", 
@@ -133,11 +136,12 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                        id.vars = c("col_group", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
+      f1_sub=0
       tryCatch({
         ## a bunch of these produce the message:
         ## boundary (singular) fit: see help('isSingular')
         ## could we substitute f1 with f1_sub if we get this message?
-        f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e6)) + 
+        f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
                             (1|sequence) + (1|sample_labels), 
                           data=data_long, 
                           control=(glmerControl(optimizer="bobyqa", 
