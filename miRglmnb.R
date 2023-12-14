@@ -21,7 +21,7 @@ miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores 
     colnames(data_wide)="count"
     data_wide=cbind(col_group,total_counts, data_wide)
     
-    
+    f1=0
     tryCatch({
       f1=glm.nb(count~col_group+offset(log(total_counts/1e4)), data=data_wide, control=glm.control(maxit=1000))
     }, error=function(e){cat("ERROR :", uniq_miRNA_in)})
@@ -39,7 +39,7 @@ miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores 
       colnames(data_wide)="count"
       data_wide=cbind(col_group,total_counts, data_wide)
       
-      
+      f1=0
       tryCatch({
         f1=glm.nb(count~col_group+offset(log(total_counts/1e4)), data=data_wide, control=glm.control(maxit=1000))
       }, error=function(e){cat("ERROR :", uniq_miRNA_in)})
