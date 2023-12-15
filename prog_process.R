@@ -38,6 +38,8 @@ var_comp=get_varcomp(fits[["miRglmm"]], fits[["miRglmm_reduced"]])
 
 #CI widths (Wald, 95% default)
 CI_widths=getCI_widths(beta_hat, SE_hat)
+CI_LL=getCI_LL(beta_hat, SE_hat)
+CI_UL=getCI_UL(beta_hat, SE_hat)
 
 
 
@@ -47,8 +49,8 @@ results[["SE_hat"]]=SE_hat
 results[["LRTp"]]=LRTp
 results[["var_comp"]]=var_comp
 results[["CI_width"]]=CI_widths
-
-
+results[["CI_LL"]]=CI_LL
+results[["CI_UL"]]=CI_UL
 
 end_time=Sys.time()
 end_time-start_time

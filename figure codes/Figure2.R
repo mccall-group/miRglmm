@@ -1,6 +1,6 @@
 ## produce figure 2 plot
 library(ggpubr)
-## read in data produced by extract_monocyte_data_subset.R
+## read in data produced by extract_bladder_testes_data_subset.R
 load("bladder_testes_data_subset_filtered.rda")
 load("bladder_testes_subset_total_counts.rda")
 

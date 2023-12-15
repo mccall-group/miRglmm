@@ -160,6 +160,18 @@ getCI_widths <- function(betas, SEs, nominal_level = 0.95){
   return(CI_widths)
 }
 
+getCI_LL <- function(betas, SEs, nominal_level = 0.95){
+  z_alpha=qnorm(1-(1-nominal_level)/2)
+  LL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]-z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  return(LL_mat)
+}
+
+getCI_UL <- function(betas, SEs, nominal_level = 0.95){
+  z_alpha=qnorm(1-(1-nominal_level)/2)
+  UL_mat=betas[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]+z_alpha*SEs[, c("miRglmm","miRglmnb","DESeq2","limmavoom")]
+  return(UL_mat)
+}
+
 # #miRglmm coverage based on 95% Wald CI
 # singular_warn=data.frame("singular"=sapply(model_fits[["miRglmm"]], 'isSingular'))
 # #find full model CI limits
