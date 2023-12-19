@@ -5,8 +5,12 @@ library(SummarizedExperiment)
 library(foreach)
 library(doParallel)
 miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
-                    min_med_lcpm = -1, ncores = 1){
+                    min_med_lcpm = -1, ncores = 1, adjust_var=NA){
   
+  if (is.na(adjust_var)){
+    adjust_var=rep(NA, length(col_group))
+  }
+    
   ## for each miRNA (this could be parallelized)
   uniq_miRNA = unique(rowData(se)$miRNA)
   total_counts=colSums(assay(se))
@@ -37,30 +41,34 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
     data_wide = as.data.frame(as.matrix(Y_all_sub))
     colnames(data_wide) = Y_seq_labels_sub
     sample_labels = rownames(Y_all_sub)
-    data_wide = cbind(col_group, total_counts, sample_labels, data_wide)
+    data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
     data_long = melt(data_wide, 
-                     id.vars = c("col_group", "total_counts", "sample_labels"),
+                     id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                      variable.name = "sequence", 
                      value.name = "count")
     f1=0
     f1_sub=0
+    if (all(is.na(adjust_var)==TRUE)){
+      Formula_full="count ~col_group + offset(log(total_counts/1e4)) + (1+col_group|sequence) + (1|sample_labels)"
+      Formula_sub="count ~col_group + offset(log(total_counts/1e4)) + (1|sequence) + (1|sample_labels)"
+    } else {
+      Formula_full="count ~col_group + adjust_var + offset(log(total_counts/1e4)) + (1+col_group|sequence) + (1|sample_labels)"
+      Formula_sub="count ~col_group + adjust_var + offset(log(total_counts/1e4)) + (1|sequence) + (1|sample_labels)"
+    }
     tryCatch({
-      f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
-                    (1+col_group|sequence) + (1|sample_labels), 
+      f1 = glmer.nb(Formula_full, 
                   data=data_long, 
                   control=(glmerControl(optimizer="bobyqa", 
                                         tolPwrss = 1e-3, 
                                         optCtrl=list(maxfun=2e5))))
-      ## a bunch of these produce the message:
-      ## boundary (singular) fit: see help('isSingular')
-      ## could we substitute f1 with f1_sub if we get this message?
-      f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
-                          (1|sequence) + (1|sample_labels), 
+    }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
+    tryCatch({  
+    f1_sub = glmer.nb(Formula_sub, 
                         data=data_long, 
                         control=(glmerControl(optimizer="bobyqa", 
                                               tolPwrss = 1e-3, 
                                               optCtrl=list(maxfun=2e5))))
-    }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
+  }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
     f1_list[[uniq_miRNA[ind3]]]=f1
     f1_sub_list[[uniq_miRNA[ind3]]]=f1_sub
   }
@@ -91,15 +99,19 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
       data_wide = as.data.frame(as.matrix(Y_all_sub))
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
-      data_wide = cbind(col_group, total_counts, sample_labels, data_wide)
+      data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
       data_long = melt(data_wide, 
-                       id.vars = c("col_group", "total_counts", "sample_labels"),
+                       id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
       f1=0
+      if (all(is.na(adjust_var)==TRUE)){
+        Formula_full="count ~col_group + offset(log(total_counts/1e4)) + (1+col_group|sequence) + (1|sample_labels)"
+         } else {
+        Formula_full="count ~col_group + adjust_var + offset(log(total_counts/1e4)) + (1+col_group|sequence) + (1|sample_labels)"
+       }
       tryCatch({
-        f1 = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
-                        (1+col_group|sequence) + (1|sample_labels), 
+        f1 = glmer.nb(Formula_full, 
                       data=data_long, 
                       control=(glmerControl(optimizer="bobyqa", 
                                             tolPwrss = 1e-3, 
@@ -131,18 +143,20 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
       data_wide = as.data.frame(as.matrix(Y_all_sub))
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
-      data_wide = cbind(col_group, total_counts, sample_labels, data_wide)
+      data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
       data_long = melt(data_wide, 
-                       id.vars = c("col_group", "total_counts", "sample_labels"),
+                       id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
       f1_sub=0
+      if (all(is.na(adjust_var)==TRUE)){
+        Formula_sub="count ~col_group + offset(log(total_counts/1e4)) + (1|sequence) + (1|sample_labels)"
+      } else {
+        Formula_sub="count ~col_group + adjust_var + offset(log(total_counts/1e4)) + (1|sequence) + (1|sample_labels)"
+      }
       tryCatch({
-        ## a bunch of these produce the message:
-        ## boundary (singular) fit: see help('isSingular')
-        ## could we substitute f1 with f1_sub if we get this message?
-        f1_sub = glmer.nb(count ~ col_group + offset(log(total_counts/1e4)) + 
-                            (1|sequence) + (1|sample_labels), 
+
+        f1_sub = glmer.nb(Formula_sub, 
                           data=data_long, 
                           control=(glmerControl(optimizer="bobyqa", 
                                                 tolPwrss = 1e-3, 

@@ -8,11 +8,11 @@ library(parallel)
 library(doParallel)
 
 load("bladder_testes_data_subset_filtered2.rda")
-ncores=1
+ncores=8 #match to what was requested on BH
 print(ncores)
 
 #start cluster to run miRNA in parallel
-#ncores=8 #match to what was requested on BH
+
 if (ncores>1){
   cl=makeCluster(ncores)
   registerDoParallel(cl)
