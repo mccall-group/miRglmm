@@ -31,12 +31,18 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
     median_cpm_sub = apply(cpm_sub, 2, median)
 
     ## filter sequences with median CPM less than the min_med_lcpm threshold
+    run_miRNA=1
     if(!is.null(min_med_lcpm)){
       idx2 = which(log(median_cpm_sub) > min_med_lcpm)
       Y_all_sub = Y_all_sub[ ,idx2]
       Y_seq_labels_sub = Y_seq_labels_sub[idx2]
+      if (length(idx2)<2){
+        run_miRNA=0
+      }
     }
-    
+    f1=0
+    f1_sub=0
+    if (run_miRNA==1){
     ## format data to fit glmer.nb models
     data_wide = as.data.frame(as.matrix(Y_all_sub))
     colnames(data_wide) = Y_seq_labels_sub
@@ -46,8 +52,6 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                      id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                      variable.name = "sequence", 
                      value.name = "count")
-    f1=0
-    f1_sub=0
     if (all(is.na(adjust_var)==TRUE)){
       Formula_full="count ~col_group + offset(log(total_counts/1e4)) + (1+col_group|sequence) + (1|sample_labels)"
       Formula_sub="count ~col_group + offset(log(total_counts/1e4)) + (1|sequence) + (1|sample_labels)"
@@ -71,6 +75,7 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
   }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
     f1_list[[uniq_miRNA[ind3]]]=f1
     f1_sub_list[[uniq_miRNA[ind3]]]=f1_sub
+    }
   }
     fits=list()
     fits[["miRglmm"]]=f1_list
@@ -79,6 +84,7 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
     print('running parallel')
     fits_full=foreach(ind3=1:length(uniq_miRNA), .packages=c("tidyverse", "reshape2", "lme4", "SummarizedExperiment")) %dopar% {
       #cat(uniq_miRNA[ind3], "\n")
+      f1_list=list()
       ## subset sequences that map to the miRNA
       idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
       Y_all_sub = t(assay(se)[idx, ])
@@ -89,11 +95,16 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
       median_cpm_sub = apply(cpm_sub, 2, median)
       
       ## filter sequences with median CPM less than the min_med_lcpm threshold
+      run_miRNA=1
       if(!is.null(min_med_lcpm)){
         idx2 = which(log(median_cpm_sub) > min_med_lcpm)
         Y_all_sub = Y_all_sub[ ,idx2]
         Y_seq_labels_sub = Y_seq_labels_sub[idx2]
+        if (length(idx2)<2){
+          run_miRNA=0
+        }
       }
+      if (run_miRNA==1){
       
       ## format data to fit glmer.nb models
       data_wide = as.data.frame(as.matrix(Y_all_sub))
@@ -117,12 +128,14 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                                             tolPwrss = 1e-3, 
                                             optCtrl=list(maxfun=2e5))))
       }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
-      f1_list=list()
+
       f1_list[[uniq_miRNA[ind3]]]=f1
+      }
       return(f1_list)
     }
     fits_red=foreach(ind3=1:length(uniq_miRNA), .packages=c("tidyverse", "reshape2", "lme4", "SummarizedExperiment")) %dopar% {
       #cat(uniq_miRNA[ind3], "\n")
+      f1_list=list()
       ## subset sequences that map to the miRNA
       idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
       Y_all_sub = t(assay(se)[idx, ])
@@ -133,11 +146,16 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
       median_cpm_sub = apply(cpm_sub, 2, median)
       
       ## filter sequences with median CPM less than the min_med_lcpm threshold
+      run_miRNA=1
       if(!is.null(min_med_lcpm)){
         idx2 = which(log(median_cpm_sub) > min_med_lcpm)
         Y_all_sub = Y_all_sub[ ,idx2]
         Y_seq_labels_sub = Y_seq_labels_sub[idx2]
+        if (length(idx2)<2){
+          run_miRNA=0
+        }
       }
+      if (run_miRNA==1){
       
       ## format data to fit glmer.nb models
       data_wide = as.data.frame(as.matrix(Y_all_sub))
@@ -163,8 +181,8 @@ miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
                                                 optCtrl=list(maxfun=2e5))))
         
       }, error = function(e){cat("ERROR :", uniq_miRNA[ind3])})
-      f1_list=list()
       f1_list[[uniq_miRNA[ind3]]]=f1_sub
+      }
       return(f1_list)
     }
   fits=list()

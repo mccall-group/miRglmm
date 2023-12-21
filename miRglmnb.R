@@ -4,8 +4,11 @@ library(lme4)
 library(SummarizedExperiment)
 library(foreach)
 library(doParallel)
-miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores = 1){
+miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores = 1, adjust_var=NA){
   library(MASS)
+  if (is.na(adjust_var)){
+    adjust_var=rep(NA, length(col_group))
+  }
   uniq_miRNA=unique(colnames(agg_data))
   total_counts=rowSums(agg_data)
   if (ncores==1){
@@ -19,11 +22,17 @@ miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores 
     
     data_wide=as.data.frame(as.matrix(Y_all_sub))
     colnames(data_wide)="count"
-    data_wide=cbind(col_group,total_counts, data_wide)
-    
+    data_wide=cbind(col_group, adjust_var, total_counts, data_wide)
+    if (all(is.na(adjust_var)==TRUE)){
+      Formula="count ~col_group + offset(log(total_counts/1e4))"
+     
+    } else {
+      Formula="count ~col_group + adjust_var + offset(log(total_counts/1e4))"
+      
+    }
     f1=0
     tryCatch({
-      f1=glm.nb(count~col_group+offset(log(total_counts/1e4)), data=data_wide, control=glm.control(maxit=1000))
+      f1=glm.nb(Formula, data=data_wide, control=glm.control(maxit=1000))
     }, error=function(e){cat("ERROR :", uniq_miRNA_in)})
     f1_list[[uniq_miRNA[ind3]]]=f1
   }
@@ -37,11 +46,17 @@ miRglmnb <- function(agg_data, col_group = c(rep("A", 19), rep("B",20)), ncores 
       
       data_wide=as.data.frame(as.matrix(Y_all_sub))
       colnames(data_wide)="count"
-      data_wide=cbind(col_group,total_counts, data_wide)
-      
+      data_wide=cbind(col_group,adjust_var, total_counts, data_wide)
+      if (all(is.na(adjust_var)==TRUE)){
+        Formula="count ~col_group + offset(log(total_counts/1e4))"
+        
+      } else {
+        Formula="count ~col_group + adjust_var + offset(log(total_counts/1e4))"
+        
+      }
       f1=0
       tryCatch({
-        f1=glm.nb(count~col_group+offset(log(total_counts/1e4)), data=data_wide, control=glm.control(maxit=1000))
+        f1=glm.nb(Formula, data=data_wide, control=glm.control(maxit=1000))
       }, error=function(e){cat("ERROR :", uniq_miRNA_in)})
       f1_list_in=list()
       f1_list_in[[uniq_miRNA[ind3]]]=f1

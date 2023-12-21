@@ -27,8 +27,13 @@ source('miRglmm.R')
 source('miRglmnb.R')
 
 #fit miRglmm full and reduced models
+fits=list()
+start=Sys.time()
 fits[["filter -1"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = -1, adjust_var=adjust_var_in)
+end=Sys.time()
+start=Sys.time()
 fits[["filter -0.5"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = -0.5, adjust_var=adjust_var_in)
+end=Sys.time()
 fits[["filter 0"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = 0, adjust_var=adjust_var_in)
 fits[["filter 0.5"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = 0.5, adjust_var=adjust_var_in)
 fits[["filter 1"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = 1, adjust_var=adjust_var_in)
@@ -37,9 +42,12 @@ fits[["filter 2"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = nc
 
 fits[["no filter"]] = miRglmm(panel_B_filter, col_group=col_group_in, ncores = ncores, min_med_lcpm = NULL, adjust_var=adjust_var_in)
 
+
+
+
 #aggregate data to miRNAs and fit miRglmnb
 miRNA_counts = t(apply(assay(panel_B_filter), 2, function(x) by(x, rowData(panel_B_filter)$miRNA, sum)))
-fits[["miRglmnb"]]= miRglmnb(miRNA_counts, col_group=col_group_in, ncores = ncores)
+fits[["miRglmnb"]]= miRglmnb(miRNA_counts, col_group=col_group_in, ncores = ncores, adjust_var=adjust_var_in)
 
 if (ncores>1){
   stopCluster(cl)
