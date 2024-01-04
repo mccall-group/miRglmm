@@ -43,6 +43,6 @@ for (ind in seq(1, n_uniq_seq)){
 keep_seq=uniq_seq[which(n_miRNA==1)]
 panel_B_filter=subset(panel_B_filter, rowData(panel_B_filter)$Template %in% keep_seq)
 
-
+colnames(rowData(panel_B_filter))=c("uniqueSequence", "miRNA")
 save(panel_B_filter, file='ERCC/ERCC_filtered.rda')
 

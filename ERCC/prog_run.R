@@ -54,14 +54,14 @@ if (ncores>1){
 }
 
 #run DESeq2 
-panelB_raw=SummarizedExperiment(assays=list(t(miRNA_counts)), rowData=colnames(miRNA_counts), colData=col_group_in)
-names(colData(panelB_raw))=c("col_group")
-ddsSE=DESeqDataSet(panelB_raw, design=~col_group)
+panelB_raw=SummarizedExperiment(assays=list(t(miRNA_counts)), rowData=colnames(miRNA_counts), colData=cbind(col_group_in, adjust_var_in))
+names(colData(panelB_raw))=c("col_group", "adjust_var")
+ddsSE=DESeqDataSet(panelB_raw, design=~col_group+adjust_var)
 fits[["DESeq2"]]=DESeq(ddsSE)
 
 #run edgeR
 edgeR_set=DGEList(counts=t(miRNA_counts), group=col_group_in)
-design=model.matrix(~col_group_in)
+design=model.matrix(~col_group_in+adjust_var_in)
 edgeR_set=estimateDisp(edgeR_set, design)
 et=glmQLFit(edgeR_set, design)
 fits[["edgeR"]]=glmQLFTest(et)

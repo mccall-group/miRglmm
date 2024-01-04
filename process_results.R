@@ -31,7 +31,8 @@ get_betas <- function(model_fits, var="col_group"){
   
   #DESeq2 betas
   library(DESeq2)
-  res=results(model_fits[["DESeq2"]])
+  idx=which(str_detect(resultsNames(model_fits[["DESeq2"]]), var))
+  res=results(model_fits[["DESeq2"]], name=resultsNames(model_fits[["DESeq2"]])[idx])
   out=data.frame('DESeq2'=log(2^res$log2FoldChange))
   rownames(out)=rownames(res)
   betas=transform(merge(betas, out, by='row.names'), row.names=Row.names, Row.names=NULL)
@@ -118,6 +119,15 @@ rownames(out)=uniq_miRNA
   return(out)
   
 }
+
+get_nseq <- function(full){
+  uniq_miRNA=names(full)
+  out=data.frame("nseq"=sapply(uniq_miRNA, function(row) length(unique(full[[row]]@frame$sequence))))
+  rownames(out)=uniq_miRNA
+  return(out)
+  
+}
+
 
 get_varcomp <- function(full, reduced){
   
