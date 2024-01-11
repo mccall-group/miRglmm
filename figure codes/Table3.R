@@ -17,7 +17,7 @@ rownames(out)=ratio_pool$ratio.seqID
 
 
 #load processed results
-load('ERCC/allfilters_processed_results.rda')
+load('ERCC/allfilters_processed_results_miRglmmreducedonly.rda')
 
 
 beta_hat=results[["beta_hat"]]
@@ -59,6 +59,6 @@ cov_prob=data.frame("coverage probability"=colMeans(gr_LL& lt_UL, na.rm=TRUE))
 table_out=cbind(MSE, "n_miRNA"=n_miRNA[match(rownames(MSE), rownames(n_miRNA)),], 
                 n_seq_used[match(rownames(MSE), rownames(n_seq_used)),],
                 "coverage probability"=cov_prob[match(rownames(MSE), rownames(cov_prob)),1])
-write.csv(table_out, file="figures/Table2.csv")
+write.csv(table_out, file="figures/Table3.csv")
 
 
