@@ -1,5 +1,6 @@
 get_betas <- function(model_fits, var="col_group"){
   library(stringr)
+  
 
   #miRglmm betas
   singular_warn=sapply(model_fits[["miRglmm"]], 'isSingular')
@@ -19,7 +20,7 @@ get_betas <- function(model_fits, var="col_group"){
   #if singularity warning choose reduced model betas
   betas=data.frame('miRglmm'=glmm_betas$full)
   rownames(betas)=rownames(glmm_betas)
-  betas$miRglmm[which(glmm_betas$singular_warning==TRUE)]=glmm_betas$reduced[which(glmm_betas$singular_warning==TRUE)]
+  betas$miRglmm[which(glmm_betas$singular_warning==TRUE | is.na(glmm_betas$singular_warning))]=glmm_betas$reduced[which(glmm_betas$singular_warning==TRUE | is.na(glmm_betas$singular_warning))]
   
   
   #miRglmnb betas
@@ -80,7 +81,7 @@ get_SEs <- function(model_fits, var="col_group"){
   #if singularity warning choose reduced model betas
   SEs=data.frame('miRglmm'=glmm_SEs$SE_full)
   rownames(SEs)=rownames(glmm_SEs)
-  SEs$miRglmm[which(glmm_SEs$singular_warning==TRUE)]=glmm_SEs$SE_red[which(glmm_SEs$singular_warning==TRUE)]
+  SEs$miRglmm[which(glmm_SEs$singular_warning==TRUE | is.na(glmm_SEs$singular_warning))]=glmm_SEs$SE_red[which(glmm_SEs$singular_warning==TRUE | is.na(glmm_SEs$singular_warning))]
   
   
   #miRglmnb betas
@@ -115,7 +116,7 @@ get_SEs <- function(model_fits, var="col_group"){
 
 
 run_LRT <- function(full, reduced){
-  uniq_miRNA=names(full)
+  uniq_miRNA=intersect(names(full), names(reduced))
 out=data.frame("LRTp"=sapply(uniq_miRNA, function(row) anova(full[[row]], reduced[[row]])$`Pr(>Chisq)`[2]))
 rownames(out)=uniq_miRNA
   return(out)
@@ -138,17 +139,18 @@ get_varcomp <- function(full, reduced){
   uniq_miRNA=names(full)
   var_comp=data.frame('random_int_sample_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sample_labels[1,1]))
   var_comp2=data.frame('random_int_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sequence[1,1]))
-  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   var_comp2=data.frame('random_slope_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(full[[row]])$sequence[2,2]))
-  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   
   #find reduced model varcomp
+  uniq_miRNA=names(reduced)
   var_comp2=data.frame('random_int_sample_var_red'=sapply(uniq_miRNA, function(row) VarCorr(reduced[[row]])$sample_labels[1]))
-  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   var_comp2=data.frame('random_int_seq_var_red'=sapply(uniq_miRNA, function(row) VarCorr(reduced[[row]])$sequence[1]))
-  var_comp=transform(merge(var_comp, var_comp2, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   var_comp$`random_slope_seq_var_red`=NA
-  var_comp=transform(merge(var_comp, singular_warn, by='row.names'), row.names=Row.names, Row.names=NULL)
+  var_comp=transform(merge(var_comp, singular_warn, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
 
   
   return(var_comp)

@@ -15,14 +15,20 @@ sim_random_signal <- function(se_orig, bins, mean_effect=2, sd_effect=1){
   ## add signal to chosen miRNA
   ## up is increased in samples 1:19
   iup = which(rowData(se)$miRNA %in% change_miRNA_up$miRNA)
-  effect_up = rnorm(length(iup), mean_effect, sd_effect)
-  effect_up[which(effect_up < 0)] = 0 # truncate effect at zero below
+  effect_up=rtruncnorm(length(iup), a=1, b=3, mean=mean_effect, sd=sd_effect)
+  #effect_up = rnorm(length(iup), mean_effect, sd_effect)
+  #effect_up[which(effect_up < 0)] = 0 # truncate effect at zero below
+  #effect_up[which(effect_up < 1)] = 1
+  #effect_up[which(effect_up > 3)] = 3
   assay(se)[iup, 1:19] = round(assay(se)[iup, 1:19] * effect_up)
   
   ## down is increased in samples 20:39
   idown = which(rowData(se)$miRNA %in% change_miRNA_down$miRNA)
-  effect_down = rnorm(length(idown), mean_effect, sd_effect)
-  effect_down[which(effect_down < 0)] = 0 # truncate effect at zero below
+  effect_down=rtruncnorm(length(idown), a=1, b=3, mean=mean_effect, sd=sd_effect)
+  #effect_down = rnorm(length(idown), mean_effect, sd_effect)
+  #effect_down[which(effect_down < 0)] = 0 # truncate effect at zero below
+  #effect_down[which(effect_down < 1)] = 1
+  #effect_down[which(effect_down > 3)] = 3
   assay(se)[idown, 20:39] = round(assay(se)[idown, 20:39] * effect_down)
   
   return(list(sim_se=se, 
@@ -42,6 +48,7 @@ load(file = "monocyte_n_seq_out.rda")
 ## set up bins to add signal to miRNA
 ## do not allow highest expressing miRNA to be chosen for added effect
 library(tidyverse)
+library(truncnorm)
 bins = n_seq_out %>% filter(median_cpm < 59000) %>% 
   mutate(rank = ntile(median_cpm, 20))
 bins$miRNA <- as.character(bins$miRNA)
@@ -51,16 +58,16 @@ set.seed(NULL)
 sims <- list()
 for(k in 1:N) sims[[k]] <- sim_random_signal(exact_subset_filtered2, bins,
                                              mean_effect=2, sd_effect=1) 
-save(sims, file = "sims_N100_m2_s1.rda")
+save(sims, file = "sims_N100_m2_s1_rtruncnorm13.rda")
 
 ## run the function with mean 2 and sd 0.5
 sims <- list()
 for(k in 1:N) sims[[k]] <- sim_random_signal(exact_subset_filtered2, bins,
                                              mean_effect=2, sd_effect=0.5) 
-save(sims, file = "sims_N100_m2_s0.5.rda")
+save(sims, file = "sims_N100_m2_s0.5_rtruncnorm13.rda")
 
 ## run the function with mean 2 and sd 0.1
 sims <- list()
 for(k in 1:N) sims[[k]] <- sim_random_signal(exact_subset_filtered2, bins,
                                              mean_effect=2, sd_effect=0.1) 
-save(sims, file = "sims_N100_m2_s0.1.rda")
+save(sims, file = "sims_N100_m2_s0.1_rtruncnorm13.rda")

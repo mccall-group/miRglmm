@@ -6,14 +6,14 @@ library(DESeq2)
 library(edgeR)
 
 #load datasets to grab truth from
-load("sims_N100_m2_s1.rda")
+load("sims_N100_m2_s1_rtruncnorm13.rda")
 source("process_results.R")
 results=list()
 #for each results file calculate beta and SE (if applicable to method)
 start_time=Sys.time()
 for (ind_run in seq(1,length(sims))){ 
 
-load(file=paste0("sim results/sims_N100_m2_s1_results", ind_run, ".rda"))
+load(file=paste0("sim results/sims_N100_m2_s1_rtruncnorm13_results", ind_run, ".rda"))
 
 
 
@@ -25,6 +25,12 @@ true_logFC[which(uniq_miRNA %in% as.character(sims[[ind_run]]$change_miRNA_down$
 true_logFC_BvsA=data.frame("true_beta"=true_logFC*-1)
 rownames(true_logFC_BvsA)=uniq_miRNA
 
+
+##### remove models where miRglmm not fit
+double_warn=sapply(fits[["miRglmm"]], 'typeof')
+fits[["miRglmm"]][which(double_warn=="double")]=NULL
+double_warn=sapply(fits[["miRglmm_reduced"]], 'typeof')
+fits[["miRglmm_reduced"]][which(double_warn=="double")]=NULL
 #collect betas
 beta_hat=get_betas(fits,  var="col_group")
 
@@ -36,10 +42,17 @@ SE_hat=get_SEs(fits,  var="col_group")
 
 #run LRT for random slope effect
 LRTp=run_LRT(fits[["miRglmm"]], fits[["miRglmm_reduced"]])
+LRTp=transform(merge(LRTp, true_logFC_BvsA, by='row.names'), row.names=Row.names, Row.names=NULL)
+LRTp$sig=(LRTp$LRTp<0.05)*1
+sig_by_truth=LRTp[, c("true_beta", "sig")] %>% group_by(true_beta) %>% summarise_all(funs(mean))
 
 #miRglmm variance components
 
 var_comp=get_varcomp(fits[["miRglmm"]], fits[["miRglmm_reduced"]])
+
+#collect number of sequences used in model
+n_seq=get_nseq(fits[["miRglmm"]])
+
 
 #bias
 bias=data.frame(beta_hat[, c("miRglmm","miRglmnb","DESeq2","edgeR","limmavoom")]-beta_hat$true_beta)
@@ -67,8 +80,10 @@ coverage_probability_sim_by_truth=coverage_indicators %>% group_by(true_beta) %>
 results[["beta_hat"]][[ind_run]]=beta_hat
 results[["SE_hat"]][[ind_run]]=SE_hat
 results[["LRTp"]][[ind_run]]=LRTp
+results[["prop_sig_by_truth"]][[ind_run]]=sig_by_truth
 results[["var_comp"]][[ind_run]]=var_comp
 results[["squared_error"]][[ind_run]]=squared_error
+results[["n_seq"]][[ind_run]]=n_seq
 results[["bias"]][[ind_run]]=bias
 results[["CI_width"]][[ind_run]]=CI_widths
 results[["coverage_indicator"]][[ind_run]]=coverage_indicators
@@ -81,7 +96,7 @@ results[["coverage_prob_sim_by_truth"]][[ind_run]]=coverage_probability_sim_by_t
 end_time=Sys.time()
 end_time-start_time
 
-save(results, file="sim results/sims_N100_m2_s1_combinedresults.rda")
+save(results, file="sim results/sims_N100_m2_s1_rtruncnorm13_combinedresults.rda")
 # MSE_mat=data.frame(matrix(unlist(results[["MSE_sim"]]), ncol=5, byrow=TRUE))
 # colnames(MSE_mat)=colnames(results[["MSE_sim"]][[1]])
 

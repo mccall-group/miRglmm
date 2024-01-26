@@ -7,7 +7,7 @@ library(edgeR)
 library(parallel)
 library(doParallel)
 
-load("sims_N100_m2_s1.rda")
+load("sims_N100_m2_s1_rtruncnorm13.rda")
 ind_run=as.integer(commandArgs(trailingOnly = TRUE)[1]) #can be run in parallel using array on BH
 ncores=as.integer(commandArgs(trailingOnly = TRUE)[2])
 print(ind_run)
@@ -60,5 +60,5 @@ fits[["limvoom"]]=eBayes(limvoom_fit, trend=TRUE)
 
 
 #will save file containing one list of 6 model fits for each simulated dataset
-save(fits, file=paste0("sim results/sims_N100_m2_s1_results", ind_run, ".rda"))
+save(fits, file=paste0("sim results/sims_N100_m2_s1_rtruncnorm13_results", ind_run, ".rda"))
 
