@@ -41,8 +41,11 @@ get_betas <- function(model_fits, var="col_group"){
   betas=transform(merge(betas, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   
   #edgeR betas
-  out=data.frame('edgeR'=log(2^model_fits[["edgeR"]]$table$logFC))
-  rownames(out)=rownames(model_fits[["edgeR"]]$table)
+  #out=data.frame('edgeR'=log(2^model_fits[["edgeR"]]$table$logFC)) #table object on log2FC scale
+  all_coeff=model_fits[["edgeR"]]$coefficients #coefficients obj on natural log scale
+  idx=which(str_detect(colnames(all_coeff), var))
+  out=data.frame('edgeR'=all_coeff[, idx])
+  rownames(out)=rownames(model_fits[["edgeR"]]$coefficients)
   betas=transform(merge(betas, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
   
   #limma-voom betas
@@ -93,7 +96,8 @@ get_SEs <- function(model_fits, var="col_group"){
   
   #DESeq2 betas
   library(DESeq2)
-  res=results(model_fits[["DESeq2"]])
+  idx=which(str_detect(resultsNames(model_fits[["DESeq2"]]), var))
+  res=results(model_fits[["DESeq2"]], name=resultsNames(model_fits[["DESeq2"]])[idx])
   #out=data.frame('beta_log2'=res$log2FoldChange, 'SE_log2'=res$lfcSE)
   #rownames(out)=rownames(res)
   #out$LL_log2=out$beta_log2-(1.96*out$SE_log2)
@@ -114,6 +118,63 @@ get_SEs <- function(model_fits, var="col_group"){
   return(SEs)
 }
 
+get_pvals <- function(model_fits, var="col_group"){
+  library(stringr)
+  
+  
+  #miRglmm pvals
+  singular_warn=sapply(model_fits[["miRglmm"]], 'isSingular')
+  #find full model 
+  all_pvals=sapply(model_fits[["miRglmm"]], function(f) summary(f)$coefficients[, "Pr(>|z|)"])
+  idx=which(str_detect(rownames(all_pvals), var))
+  pval_full=data.frame("full"=all_pvals[idx,], "singular_warning"=singular_warn)
+  rownames(pval_full)=colnames(all_pvals)
+  
+  #find reduced model
+  all_pvals=sapply(model_fits[["miRglmm_reduced"]], function(f) summary(f)$coefficients[, "Pr(>|z|)"])
+  idx=which(str_detect(rownames(all_pvals), var))
+  pval_red=data.frame("reduced"=all_pvals[idx,])
+  rownames(pval_red)=colnames(all_pvals)
+  glmm_pvals=transform(merge(pval_full, pval_red, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  
+  #if singularity warning choose reduced model 
+  pvals=data.frame('miRglmm'=glmm_pvals$full)
+  rownames(pvals)=rownames(glmm_pvals)
+  pvals$miRglmm[which(glmm_pvals$singular_warning==TRUE | is.na(glmm_pvals$singular_warning))]=glmm_pvals$reduced[which(glmm_pvals$singular_warning==TRUE | is.na(glmm_pvals$singular_warning))]
+  
+  
+  #miRglmnb
+  double_warn=sapply(model_fits[["miRglmnb"]], 'is.double')
+  model_fits[["miRglmnb"]]=model_fits[["miRglmnb"]][double_warn==FALSE]
+  all_pvals=sapply(model_fits[["miRglmnb"]], function(f) summary(f)$coefficients[, "Pr(>|z|)"])
+  idx=which(str_detect(rownames(all_pvals), var))
+  out=data.frame('miRglmnb'=all_pvals[idx,])
+  pvals=transform(merge(pvals, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  
+  
+  #DESeq2
+  library(DESeq2)
+  idx=which(str_detect(resultsNames(model_fits[["DESeq2"]]), var))
+  res=results(model_fits[["DESeq2"]], name=resultsNames(model_fits[["DESeq2"]])[idx])
+  out=data.frame('DESeq2'=res$pvalue)
+  rownames(out)=rownames(res)
+  pvals=transform(merge(pvals, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  
+  #edgeR
+  out=data.frame('edgeR'=fits[["edgeR"]][["table"]][["PValue"]]) 
+  rownames(out)=rownames(fits[["edgeR"]][["table"]])
+  pvals=transform(merge(pvals, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  
+  #limma-voom betas
+  all_pvals=model_fits[["limvoom"]][["p.value"]]
+  idx=which(str_detect(colnames(all_pvals), var))
+  out=data.frame('limmavoom'=all_pvals[, idx])
+  rownames(out)=rownames(all_pvals)
+  pvals=transform(merge(pvals, out, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  
+  return(pvals)
+  
+}
 
 run_LRT <- function(full, reduced){
   uniq_miRNA=intersect(names(full), names(reduced))

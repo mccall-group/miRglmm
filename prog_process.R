@@ -26,6 +26,9 @@ beta_hat=get_betas(fits,  var="col_group")
 #collect SEs
 SE_hat=get_SEs(fits,  var="col_group")
 
+#collect pvalues for coefficient of interest
+pvals=get_pvals(fits,  var="col_group")
+
 #run LRT for random slope effect
 LRTp=run_LRT(fits[["miRglmm"]], fits[["miRglmm_reduced"]])
 
@@ -51,6 +54,7 @@ results[["var_comp"]]=var_comp
 results[["CI_width"]]=CI_widths
 results[["CI_LL"]]=CI_LL
 results[["CI_UL"]]=CI_UL
+results[["pvals"]]=pvals
 
 end_time=Sys.time()
 end_time-start_time
