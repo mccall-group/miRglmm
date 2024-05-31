@@ -1,10 +1,4 @@
-library(tidyverse)
-library(reshape2)
-library(lme4)
-library(SummarizedExperiment)
-library(foreach)
-library(doParallel)
-miRglmm <- function(se, col_group = c(rep("A", 19), rep("B",20)),
+miRglmm <- function(se, col_group,
                     min_med_lcpm = -1, ncores = 1, adjust_var=NA){
   
   if (is.na(adjust_var)){

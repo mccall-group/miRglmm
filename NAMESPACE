@@ -1,0 +1,7 @@
+import(tidyverse)
+import(doParallel)
+importFrom(reshape2, melt)
+importFrom(lme4, glmer.nb, glmerControl)
+importFrom(foreach, foreach)
+
+export(miRglmm)

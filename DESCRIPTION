@@ -1,0 +1,13 @@
+Package: miRglmm
+Version: 0.99.0
+Date: 2024-05-09
+Title: A generalized linear mixed model for miRNA-seq data
+Description: Fit a generalized linear mixed model to isomiR counts from miRNA-seq data.
+Author: Andrea Baran <andrea_baran@urmc.rochester.edu>, Matthew N. McCall <mccallm@gmail.com>
+Maintainer: Matthew N. McCall <mccallm@gmail.com>
+Depends: R (>= 4.3.0), SummarizedExperiment
+Imports: BiocGenerics, RUnit, tidyverse, reshape2, lme4, foreach, doParallel
+Suggests: 
+biocViews: Software, SequencingData, RNASeqData, miRNAData
+License: GPL (>= 2)
+URL: http://bioconductor.org
