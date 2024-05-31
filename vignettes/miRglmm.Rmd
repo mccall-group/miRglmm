@@ -2,10 +2,11 @@
 title: A generalized linear mixed model for miRNA-seq data
 author: '[Andrea M. Baran and Matthew N. McCall](http://mnmccall.com)'
 date: "`r Sys.Date()`"
-output:
-  html_document: default
-  pdf_document: default
-  word_document: default
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteIndexEntry{A generalized linear mixed model for miRNA-seq data}
+  %\usepackage[UTF-8]{inputenc}
 ---
 
 
@@ -32,7 +33,8 @@ Ernesto: add srabench instructions here
 # Statistical modeling with miRglmm
 
 ```{r load_miRglmm}
-library('miRglmm')
+library("miRglmm")
+library("SummarizedExperiment")
 ```
 
 ```{r load_example_data}
@@ -52,7 +54,7 @@ colData(se_example)
 ```
 
 The rowData contain information about each isomiR, including its sequence and the miRNA it aligned to:
-```{r col_data_explore}
+```{r row_data_explore}
 rowData(se_example)
 ```
 
@@ -60,7 +62,7 @@ rowData(se_example)
 Andrea: add instructions for miRglmm usage here
 
 ```{r miRglmm_fit}
-fit = miRglmm(se_example, col_group=rep(c("A","B"), c(3,3)))
+fit = miRglmm(se = se_example, col_group = rep(c("A","B"), c(3,3)))
 ```
 
 ## Output of the GLMM model

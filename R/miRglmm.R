@@ -42,7 +42,7 @@ miRglmm <- function(se, col_group,
     colnames(data_wide) = Y_seq_labels_sub
     sample_labels = rownames(Y_all_sub)
     data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
-    data_long = melt(data_wide, 
+    data_long = reshape2::melt(data_wide, 
                      id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                      variable.name = "sequence", 
                      value.name = "count")
@@ -105,7 +105,7 @@ miRglmm <- function(se, col_group,
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
       data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
-      data_long = melt(data_wide, 
+      data_long = reshape2::melt(data_wide, 
                        id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
@@ -156,7 +156,7 @@ miRglmm <- function(se, col_group,
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
       data_wide = cbind(col_group, adjust_var, total_counts, sample_labels, data_wide)
-      data_long = melt(data_wide, 
+      data_long = reshape2::melt(data_wide, 
                        id.vars = c("col_group", "adjust_var", "total_counts", "sample_labels"),
                        variable.name = "sequence", 
                        value.name = "count")
