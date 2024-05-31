@@ -1,0 +1,12 @@
+citEntry(entry = "Article",
+         author = "Andrea M Baran and Arun H Patil and Ernesto L Aparicio and Marc K Halushka and Matthew N McCall",
+         title = "miRglmm: a generalized linear mixed model of isomiR-level counts improves estimation of miRNA level differential expression and uncovers variable differential expression between isomiRs  
+",
+         journal = "bioRxiv",
+         volume = "",
+         number = "",
+         year = "2024",
+         pages = "2024-05",
+         publisher = "Cold Spring Harbor Laboratory",
+	 header = "For use of the miRglmm package, please cite:"
+)
