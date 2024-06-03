@@ -66,10 +66,109 @@ fit = miRglmm(se = se_example, col_group = rep(c("A","B"), c(3,3)))
 ```
 
 ## Output of the GLMM model
-Andrea: add info about the output of the miRglmm
+The output of miRglmm is a list of glmerMod model fit objects called "miRglmm" with length equal to the number of miRNA modelled. The elements of the list are named by miRNA (based on unique entries in rowData(se)$miRNA). This allows flexible extraction of any model fit parameter of interest for downstream analysis. 
+
+An additional output of miRglmm is another list of glmerMod model fits called "miRglmm_reduced". This is equivalent in size and structure to the "miRglmm" list output, but it is model fit objects after removal of the col_group|sequence random effect, and can be used to perform a likelihood ratio test for the significance of the random slope parameter.
 
 ## Downstream analyses 
-Andrea: add some example of what you can do with the output in terms of results / plots
+The fixed effects can be obtained using the following commands:
+
+```{r get_beta}
+all_coeff=sapply(fit[["miRglmm"]], "fixef")
+```
+
+The effect of primary interest (col_group) can be obtained by looking at that specific row in the fit object:
+
+```{r get_beta2}
+library(stringr)
+idx=which(str_detect(rownames(all_coeff), "col_group"))
+coeff_full=data.frame("full"=all_coeff[idx,])
+rownames(coeff_full)=colnames(all_coeff)
+```
+
+Plots of the primary fixed effect of interest, with overlaid isomiR-level random effects, can be plotted for a specified miRNA. Here we use hsa-miR-100-5p as an example:
+```{r beta_plot}
+miRNA_plot="hsa-miR-100-5p"
+
+f1=fit[["miRglmm"]][[miRNA_plot]]
+
+#pull out individual sequence estimates
+idx=which(str_detect(colnames(ranef(f1)$sequence), "col_group"))
+idx_fixed=which(str_detect(names(fixef(f1)), "col_group"))
+groupA=fixef(f1)[1]+ranef(f1)$sequence$`(Intercept)`-fixef(f1)[1]
+groupB=fixef(f1)[1]+ranef(f1)$sequence$`(Intercept)`+ranef(f1)$sequence[,idx]+fixef(f1)[idx_fixed]-fixef(f1)[1]
+groupA=data.frame("estimate"=groupA, "sequence"=rownames(ranef(f1)$sequence))
+groupB=data.frame("estimate"=groupB, "sequence"=rownames(ranef(f1)$sequence))
+groupA$Pool="Bladder"
+groupB$Pool="Testes"
+comb_df=rbind(groupA, groupB)
+
+#pull out fixed effect estimates
+groupA=fixef(f1)[1]-fixef(f1)[1]
+groupB=fixef(f1)[1]+fixef(f1)[idx_fixed]-fixef(f1)[1]
+groupA=data.frame("estimate"=groupA)
+groupB=data.frame("estimate"=groupB)
+groupA$Pool="Bladder"
+groupB$Pool="Testes"
+comb_df_overall=rbind(groupA, groupB)
+
+ggplot(comb_df, aes(x=Pool, y=estimate, group=sequence, color="miRglmm isomiR estimates (random effects)"))+geom_line(alpha=0.5)+geom_point(alpha=0.5)+
+  geom_line(data=comb_df_overall, aes(x=Pool, y=estimate, group=1, color="miRglmm estimates (fixed effects)"), size=2)+
+  xlab("tissue")+
+  scale_y_continuous(breaks=c(-4, -2, 0, 2), labels=round(exp(c(-4,-2,0,2)),3))+
+  ylab(paste('Expression relative to', '\n', 'average bladder expression'))+scale_x_discrete(expand=c(0.05,0))+xlab('')+
+  scale_color_manual(name="", values=c("miRglmm estimates (fixed effects)"="red", "miRglmm isomiR estimates (random effects)"="black"))+
+  theme(legend.position="bottom", legend.direction="horizontal")
+
+```
+
+
+
+The Standard Error (SE), and 95% Wald-based Confidence Intervals, for the primary fixed effect of interest can be found via:
+
+```{r get_SE}
+all_SE=sapply(fit[["miRglmm"]], "vcov")
+idx1=which(str_detect(rownames(all_SE[[1]]), "col_group")==TRUE)
+idx2=which(str_detect(colnames(all_SE[[1]]), "col_group")==TRUE)
+SE_vec=data.frame('SE_full'=sapply(all_SE, function(x) sqrt(x[idx1,idx2])))
+rownames(SE_vec)=names(all_SE)
+
+z_alpha=qnorm(1-(1-0.95)/2)
+LL_mat=coeff_full-z_alpha*SE_vec
+UL_mat=coeff_full+z_alpha*SE_vec
+```
+
+Wald p-values can be found with the following:
+
+```{r get_p}
+all_pvals=sapply(fit[["miRglmm"]], function(f) summary(f)$coefficients[, "Pr(>|z|)"])
+idx=which(str_detect(rownames(all_pvals), "col_group"))
+pval_full=data.frame("full"=all_pvals[idx,])
+rownames(pval_full)=colnames(all_pvals)
+```
+
+A likelihood-ratio test for the col_group|sequence effect can be performed via:
+```{r LRT}
+uniq_miRNA=intersect(names(fit[["miRglmm"]]), names(fit[["miRglmm_reduced"]]))
+LRTp=data.frame("LRTp"=sapply(uniq_miRNA, function(row) anova(fit[["miRglmm"]][[row]], fit[["miRglmm_reduced"]][[row]])$`Pr(>Chisq)`[2]))
+rownames(LRTp)=uniq_miRNA
+```
+
+The distribution of the LRT p-values can be plotted via:
+```{r LRT_plot}
+library(ggplot2)
+ggplot(LRTp, aes(x=LRTp))+geom_histogram(color="black", fill="gray", bins=50)+xlab('Likelihood Ratio Test p-value')+ylab('number of miRNA')
+```
+The following code can be used to obtain the variance components from the (full) miRglmm model:
+```{r var_comp}
+uniq_miRNA=names(fit[["miRglmm"]])
+  var_comp=data.frame('random_int_sample_var'=sapply(uniq_miRNA, function(row) VarCorr(fit[["miRglmm"]][[row]])$sample_labels[1,1]))
+  var_comp2=data.frame('random_int_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(fit[["miRglmm"]][[row]])$sequence[1,1]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+  var_comp2=data.frame('random_slope_seq_var'=sapply(uniq_miRNA, function(row) VarCorr(fit[["miRglmm"]][[row]])$sequence[2,2]))
+  var_comp=transform(merge(var_comp, var_comp2, by='row.names', all=T), row.names=Row.names, Row.names=NULL)
+```
+
 
 # Session Info
 ```{r session_info}
