@@ -5,7 +5,7 @@ miRglmm <- function(se, col_group,
     adjust_var=rep(NA, length(col_group))
   }
     
-  ## for each miRNA (this could be parallelized)
+  ## for each miRNA (parallelized over miRNA if ncores>1)
   uniq_miRNA = unique(rowData(se)$miRNA)
   total_counts=colSums(assay(se))
   if (ncores==1){
@@ -37,7 +37,7 @@ miRglmm <- function(se, col_group,
     f1=0
     f1_sub=0
     if (run_miRNA==1){
-    ## format data to fit glmer.nb models
+
     data_wide = as.data.frame(as.matrix(Y_all_sub))
     colnames(data_wide) = Y_seq_labels_sub
     sample_labels = rownames(Y_all_sub)
@@ -77,7 +77,6 @@ miRglmm <- function(se, col_group,
   } else {
     print('running parallel')
     fits_full=foreach(ind3=1:length(uniq_miRNA), .packages=c("tidyverse", "reshape2", "lme4", "SummarizedExperiment")) %dopar% {
-      #cat(uniq_miRNA[ind3], "\n")
       f1_list=list()
       ## subset sequences that map to the miRNA
       idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
@@ -100,7 +99,7 @@ miRglmm <- function(se, col_group,
       }
       if (run_miRNA==1){
       
-      ## format data to fit glmer.nb models
+
       data_wide = as.data.frame(as.matrix(Y_all_sub))
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
@@ -128,7 +127,7 @@ miRglmm <- function(se, col_group,
       return(f1_list)
     }
     fits_red=foreach(ind3=1:length(uniq_miRNA), .packages=c("tidyverse", "reshape2", "lme4", "SummarizedExperiment")) %dopar% {
-      #cat(uniq_miRNA[ind3], "\n")
+
       f1_list=list()
       ## subset sequences that map to the miRNA
       idx = which(rowData(se)$miRNA == uniq_miRNA[ind3])
@@ -151,7 +150,6 @@ miRglmm <- function(se, col_group,
       }
       if (run_miRNA==1){
       
-      ## format data to fit glmer.nb models
       data_wide = as.data.frame(as.matrix(Y_all_sub))
       colnames(data_wide) = Y_seq_labels_sub
       sample_labels = rownames(Y_all_sub)
