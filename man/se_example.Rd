@@ -9,16 +9,16 @@ A SummarizedExperiment object containing a subset of miRNA-seq data from 6 monoc
 }
 \usage{data("se_example")}
 \format{
-  A Summarized experiment with isomiR-level read counts for 3 miRNAs and 6 monocyte samples. observations on the following 2 variables.
+  A Summarized experiment with isomiR-level read counts for 3 miRNAs and 6 monocyte samples. 
 }
 \details{
-%%  ~~ If necessary, more details than the __description__ above ~~
+The column names of assay(se) indicate unique sample identifiers. rowData(se) contains columns called "miRNA" and "uniqueSequence" as identifiers of miRNA and isomiR for each read count. 
 }
 \source{
-%%  ~~ reference to a publication or URL from which the data were obtained ~~
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE100467
 }
 \references{
-%%  ~~ possibly secondary sources and usages ~~
+Juzenas S, Venkatesh G, Hübenthal M, Hoeppner MP et al. A comprehensive, cell specific microRNA catalogue of human peripheral blood. Nucleic Acids Res 2017 Sep 19;45(16):9290-9301. PMID: 28934507
 }
 \examples{
 data(se_example)
