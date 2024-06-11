@@ -1,9 +1,16 @@
 miRglmm <- function(se, col_group,
                     min_med_lcpm = -1, ncores = 1, adjust_var=NA){
   
+  if(!"miRNA" %in% names(rowData(se))){
+    stop("rowData(se) must include a variable named miRNA containing unique miRNA IDs")
+  }
+  if(!"uniqueSequence" %in% names(rowData(se))){
+    stop("rowData(se) must include a variable named uniqueSequence containing unique sequence/isomiR IDs")
+  }
   if (is.na(adjust_var)){
     adjust_var=rep(NA, length(col_group))
   }
+  
     
   ## for each miRNA (parallelized over miRNA if ncores>1)
   uniq_miRNA = unique(rowData(se)$miRNA)
