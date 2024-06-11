@@ -46,20 +46,32 @@ The example data and corresponding annotation are stored in a SummarizedExperime
 ```{r data_explore}
 show(se_example)
 str(assay(se_example))
+
+```
+
+The column names of the assay in the SummarizedExperiment object must correspond to unique sample IDs:
+
+```{r data_explore2}
+
+head(colnames(assay(se_example)))
+
 ```
 
 The colData contain information about each sample:
 ```{r col_data_explore}
 colData(se_example)
+
 ```
 
-The rowData contain information about each isomiR, including its sequence and the miRNA it aligned to:
+The rowData contain information about each isomiR, including its sequence ("uniqueSequence") and the miRNA ("miRNA") it aligned to:
 ```{r row_data_explore}
 rowData(se_example)
 ```
 
 ## Fitting the GLMM model
-Andrea: add instructions for miRglmm usage here
+A SummarizedExperiment object (for example, se_example) is input into miRglmm, along with a vector specifying primary fixed effect of interest for Differential Expression Analysis (DEA), col_group. This can be 2 or more level categorical variable. For miRglmm to appropriately model the random effects for sample and sequence, the columns names of the assay object in the input SummarizedExperiment object (for example, assay(se_example)) must be the unique sample IDs. There must also be elements of rowData (for example, rowData(se_example)) that are called "uniqueSequence" and "miRNA", which indicate the unique sequence/isomiR identifier, and the unique miRNA identifiers, respectively.
+
+Additional input arguments include: min_med_lcpm (default -1), ncores (default 1), and adjust_var (default NA). min_med_lcpm specifies a threshold on median(log(CPM)) expression for retaining sequences to include in the analysis. Larger values retain fewer (more highly expressed) sequences/isomiRs in the analysis. ncores is used to specify the number of cores available to run the algorithm, and the analysis of individual miRNA will be run in parallel across cores if ncores>1. adjust_var can be used to specify an adjustment variable (continuous or categorical) that will be used as an additional fixed effect in the miRglmm model. 
 
 ```{r miRglmm_fit}
 fit = miRglmm(se = se_example, col_group = rep(c("A","B"), c(3,3)))
