@@ -27,9 +27,21 @@ Our example data set consists of 6 monocyte samples. Fastq files for these sampl
 # miRge processing and alignment
 Arun: add miRge instructions here
 
-# srabench processing and alignment
-Ernesto: add srabench instructions here
-
+# sRNAbench processing and alignment
+After installing _sRNAbench_ ([instructions here](https://github.com/bioinfoUGR/sRNAtoolbox)), you can directly download and align SRA files from your terminal. To process the 6 monocytes samples from [SRP110505](https://www.ncbi.nlm.nih.gov/sra?term=SRP110505) included as example data in this package:
+```
+sRNAbench input=SRR5755870 output=srnabench/SRR5755870 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+sRNAbench input=SRR5755996 output=srnabench/SRR5755996 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+sRNAbench input=SRR5755961 output=srnabench/SRR5755961 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+sRNAbench input=SRR5755982 output=srnabench/SRR5755982 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+sRNAbench input=SRR5755821 output=srnabench/SRR5755821 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+sRNAbench input=SRR5756084 output=srnabench/SRR5756084 adapter=TGGAATTCTCGGGTGCCAAGGG microRNA=hsa isoMiR=true
+```
+We then run _sRNAde_ to generate a matrix of counts:
+```
+sRNAde input=srnabench/ output=sRNAde_result grpString=SRR5755870:SRR5755996:SRR5755961:SRR5755982:SRR5755821:SRR5756084 readIso=true colReadIso=5 minExprReadIso=1
+```
+The resulting isomiR count matrix file, _microRNAannotation_minExpr1_RC.mat_,  can be found in the _sRNAde_result_ directory.
 # Statistical modeling with miRglmm
 
 ```{r load_miRglmm}
