@@ -41,7 +41,25 @@ We then run _sRNAde_ to generate a matrix of counts:
 ```
 sRNAde input=srnabench/ output=sRNAde_result grpString=SRR5755870:SRR5755996:SRR5755961:SRR5755982:SRR5755821:SRR5756084 readIso=true colReadIso=5 minExprReadIso=1
 ```
-The resulting isomiR count matrix file, _microRNAannotation_minExpr1_RC.mat_,  can be found in the _sRNAde_result_ directory.
+The resulting isomiR count matrix file, _microRNAannotation_minExpr1_RC.mat_,  can be found in the _sRNAde_result_ directory. To load it into a _SummarizedExperiment_ object:
+
+```
+library("SummarizedExperiment")
+input_df <- read.delim("sRNAde_result/microRNAannotation_minExpr1_RC.mat", check.names = FALSE)
+input_data <- as.matrix(input_df[,-1])
+input_row_data <- strsplit(input_df$name, "\\|")
+formated_row_data = data.frame(uniqueSequence = sapply(input_row_data, function(x) x[1]),
+                               miRNA = sapply(input_row_data, function(x) x[2]))
+input_col_data <- strsplit(colnames(input_df), "\\|")
+formated_col_data = data.frame(sampleID = sapply(input_col_data[-1], function(x) x[1]),
+                               group = sapply(input_col_data[-1], function(x) x[2]))
+SummarizedExperiment(assays=list(counts=input_data),
+                     rowData=formated_row_data,
+                     colData=formated_col_data,
+                     checkDimnames=TRUE)
+```
+
+
 # Statistical modeling with miRglmm
 
 ```{r load_miRglmm}
