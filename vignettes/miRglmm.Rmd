@@ -30,21 +30,38 @@ miRge 3.0 can be downloaded ([here](https://github.com/mhalushka/miRge3.0/)) and
 #### To execute miRge3.0, change the directory to SRR_folder (Alternatively, one could provide absolute paths)
 miRge3.0 -s SRR5755870.fastq.gz,SRR5755996.fastq.gz,SRR5755961.fastq.gz,SRR5755982.fastq.gz,SRR5755821.fastq.gz,SRR5756084.fastq.gz -gff -bam -trf -lib miRge3_Lib -on human -db mirbase -o OutputDir -mEC -ks 20 -ke 20
 
-## Load miRNA counts for exact.miRNA (canonical sequences) and isomiR.miRNAs (isomiR sequences) 
+## Load miRNA counts for exact.miRNA (canonical sequences) and isomiR.miRNAs (isomiR sequences) and create SummarizedExperiment
 The annotated smallRNA results can be located in folder miRge.YEAR-MM-DD_HR_MM_SS (default output folder with date and time). To load canonical and isomiR sequences can be loaded from mapped.csv file inside the ouput folder as shown below:
+```
+# Creating Summarized Experiment from miRge3.0 output
 
-mir_res <- read.csv("mapped.csv")
+library(dplyr)
+mapped <- read.csv("mapped.csv")
 
-# Select only exact miRNA and respective counts for all samples
-mature_miRNAs <- select(mir_res[(mir_res['exact.miRNA'] != ''),], -c("annotFlag","hairpin.miRNA","mature.tRNA","primary.tRNA","snoRNA","rRNA","ncrna.others","mRNA","isomiR.miRNA"))
+mapped_miRNAs <- select(mapped,-c("annotFlag","hairpin.miRNA","mature.tRNA","primary.tRNA","snoRNA","rRNA","ncrna.others","mRNA"))
+mapped_miRNAs <- mapped_miRNAs[c((mapped_miRNAs$exact.miRNA != '') | (mapped_miRNAs$isomiR.miRNA != '')),]
 
-rownames(mature_miRNAs) <- NULL # Reorder the row names 
+mapped_miRNAs$match<- with(mapped_miRNAs, ifelse(exact.miRNA != '', "exact miRNA", "isomiR miRNA"))
+mapped_miRNAs$miRNA<- with(mapped_miRNAs, ifelse(exact.miRNA != '', exact.miRNA, isomiR.miRNA))
+rownames(mapped_miRNAs) <- NULL
 
-# Similarly select isomiR sequences and their respective counts for all samples
-isomiRs <- select(mir_res[(mir_res['isomiR.miRNA'] != ''),], -c("annotFlag","exact.miRNA","hairpin.miRNA","mature.tRNA","primary.tRNA","snoRNA","rRNA","ncrna.others","mRNA"))
+# Preparing Assay
+expressionCounts <- mapped_miRNAs[,6:ncol(mapped_miRNAs)-2]
 
-rownames(isomiRs) <- NULL # Reorder the row names 
+# Preparing rowData
+miRNA_data <- mapped_miRNAs[c('Sequence','match','miRNA')]
+names(miRNA_data)[names(miRNA_data) == 'Sequence'] <- 'uniqueSequence'
 
+# Preparing colData
+meta <- mapped <- read.csv("annotation.report.csv", header=TRUE)
+meta <- meta[c(1,6,7)]
+colnames(meta) <- c('sample_id', 'filtered_miRNA_reads', 'unique_miRNAs')
+# The sample groups for differential expression should accordingly be mentioned by the researcher as a new column. 
+rownames(meta) <- meta$sample_id
+
+# Preparing Summarized Experiment Object
+mirge_SE <- SummarizedExperiment(assays=list(counts=expressionCounts), colData=meta, rowData = miRNA_data)
+```
 
 
 # sRNAbench processing and alignment
