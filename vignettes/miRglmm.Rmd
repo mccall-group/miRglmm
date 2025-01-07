@@ -2,7 +2,8 @@
 title: A generalized linear mixed model for miRNA-seq data
 author: '[Andrea M. Baran and Matthew N. McCall](http://mnmccall.com)'
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  pdf_document: default
 vignette: >
   %\VignetteEngine{knitr::knitr}
   %\VignetteIndexEntry{A generalized linear mixed model for miRNA-seq data}
@@ -167,7 +168,7 @@ rownames(coeff_full)=colnames(all_coeff)
 
 Plots of the primary fixed effect of interest, with overlaid isomiR-level random effects, can be plotted for a specified miRNA. Here we use hsa-miR-100-5p as an example:
 ```{r beta_plot}
-miRNA_plot="hsa-miR-100-5p"
+miRNA_plot=names(fit[["miRglmm"]])[1]
 
 f1=fit[["miRglmm"]][[miRNA_plot]]
 
